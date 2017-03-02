@@ -1,0 +1,5 @@
+#INCLUDE 'PROTHEUS.CH'
+
+User Function CHGX5FIL()
+
+Return(CFILANT)

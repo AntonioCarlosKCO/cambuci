@@ -1,0 +1,99 @@
+#include 'protheus.ch'
+#include 'parmtype.ch'
+
+/*/{Protheus.doc} CAFATA04
+//Trigger para atualização do tipo de operação e tes inteligente
+@author totvsremote
+@since 26/04/2016
+@version undefined
+@type function
+/*/
+user function CAFATA04()
+	Local _nPProduto:= GdFieldPos("C6_PRODUTO")
+	Local _cProduto := aCols[n][_nPProduto]
+
+	_cRet := MaTesInt(2,padr(M->C5_XOPER,2),M->C5_CLIENT,M->C5_LOJAENT,If(M->C5_TIPO$'DB',"F","C"),alltrim(_cProduto),"C6_TES")
+
+return(_cRet)
+
+
+/*/{Protheus.doc} CAFATA05
+//Gatilho para replicação do tipo de operação nas linhas do acols 
+@author totvsremote
+@since 26/04/2016
+@version undefined
+@type function
+/*/
+User Function CAFATA05(lOpc)
+	Local _cTpOper 		:= M->C5_XOPER
+	Local _nPProduto 	:= GdFieldPos("C6_PRODUTO")
+	Local _nPOper 		:= GdFieldPos("C6_OPER")
+	Local _nPTES 		:= GdFieldPos("C6_TES")
+	Local _lOk 			:= .F.
+                           
+If FunName() == "XQGALTPV" .And. lOpc //Stanko
+	Return _cTpOper
+EndIf
+
+	For _nx := 1 to len(aCols)
+
+		if ! empty(aCols[_nx][_nPProduto])
+			// Raphael Araújo - 17/01/2017
+			n := _nX
+			//aCols[_nx][_nPTES]	:= U_CAFATA04()
+			
+			aCols[_nx][_nPOper] := _cTpOper
+			M->C6_OPER 			:= _cTpOper
+			RunTrigger(2,_nx,nil,,'C6_OPER')
+			
+			M->C6_PRODUTO 	:= aCols[n][_nPProduto]
+			RunTrigger(2,_nx,nil,,'C6_PRODUTO')
+			
+			_lOk := .T.
+		
+		Endif	
+
+	Next
+
+	if _lOk                      
+		If FunName() <> "XQGALTPV" //Stanko
+			GETDREFRESH()
+			SetFocus(oGetDad:oBrowse:hWnd) // Atualizacao por linha
+			oGetDad:Refresh()
+		EndIf
+			
+	Endif	
+
+Return(_cTpOper)
+
+
+User Function CAFATA06()
+
+	Local _nPProduto 	:= ascan( aHeader, {|x,y|  alltrim(x[2]) == 'C6_PRODUTO'})
+	Local _nPOper 		:= ascan( aHeader, {|x,y|  alltrim(x[2]) == 'C6_OPER'})
+	Local _nPxCodRef	:= ascan( aHeader, {|x,y|  alltrim(x[2]) == 'C6_XCODREF'})
+	Local _lOk := .f.
+	Local _cRet := aCols[n][_nPxCodRef]
+	
+	if ! empty(aCols[n][_nPProduto])
+	
+		M->C6_PRODUTO 	:= aCols[n][_nPProduto]
+		RunTrigger(2,n,nil,,'C6_PRODUTO')
+		
+		M->C6_OPER		:= aCols[n][_nPOper]
+		RunTrigger(2,n,nil,,'C6_OPER')
+		
+		_lOk := .t.                                                 
+			
+	Endif	
+	
+	if _lOk
+		If FunName() <> "XQGALTPV" //Stanko
+			GETDREFRESH()
+			SetFocus(oGetDad:oBrowse:hWnd) // Atualizacao por linha
+			oGetDad:Refresh()
+		EndIf	
+	Endif	
+	
+
+Return(_cRet)
